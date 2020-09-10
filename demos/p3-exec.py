@@ -4,7 +4,7 @@ import os, sys, time, re
 
 pid = os.getpid()
 
-os.write(1, ("About to fork (pid:%d)\n" % pid).encode())
+os.write(1, ("\nAbout to fork (pid:%d)\n" % pid).encode())
 
 rc = os.fork()
 

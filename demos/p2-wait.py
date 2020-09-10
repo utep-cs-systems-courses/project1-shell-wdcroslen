@@ -4,7 +4,7 @@ import os, sys, time
 
 pid = os.getpid()
 
-os.write(1, ("About to fork (pid:%d)\n" % pid).encode())
+os.write(1, ("\nAbout to fork (pid:%d)\n" % pid).encode())
 
 rc = os.fork()
 
@@ -20,6 +20,37 @@ elif rc == 0:                   # child
 else:                           # parent (forked ok)
     os.write(1, ("Parent: My pid=%d.  Child's pid=%d\n" % 
                  (pid, rc)).encode())
-    childPidCode = os.wait()
+    childPidCode = os.wait() #Guessing wait returns PID of what you waited on
     os.write(1, ("Parent: Child %d terminated with exit code %d\n" % 
                  childPidCode).encode())
+
+	
+#	"""
+#	Trace:  
+#		pid = 1
+#		#write
+#		
+#		{Parent}
+#		rc = fork() ## which = 2 because its the pid of the forked program
+#		
+#		else:
+#			#write
+#			cPC = wait() which = 2 because its the pid of the waited program
+#		
+#		#After wait go to child
+#		
+#		
+#		{Child}
+#		rc = 0 ## succesful fork
+#		
+#		elif: 
+#			#write
+#			#sleep one second
+#			#write:
+#			#exit (Is this necessary?)
+			#after exit go back to wait in parent
+#		
+#		{Parent}
+#		#write
+#
+#	"""

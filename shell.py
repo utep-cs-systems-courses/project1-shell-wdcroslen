@@ -1,3 +1,6 @@
+
+#TODO: I need to work on the redirect
+
 import os, sys, time, re
 
 pid = os.getpid()
@@ -6,9 +9,11 @@ pr,pw = os.pipe()
 
 cd = "usr"
 curr = cd
-prev = None
-prevDir = None
+prev = None #prev doesnt work going back multiple directories
+#maybe I can have a dict called prev and prev[] tells you what the previous one is
 directory_list = {"usr":["Desktop","Downloads","temp"] , "Desktop":"", "Downloads":"oof" ,"temp":"none","none":"","oof":""} #make a dir list for each dir
+
+prev_list = {"Desktop":"usr", "Downloads":"usr" ,"temp":"usr","none":"usr/temp","oof":"usr/Downloads"} #make a dir list for each dir
 
 #TODO: Do I need a files list separately so you can ls them but not cd?
 
@@ -48,10 +53,17 @@ def update_curr_dir(dir):
 	#TODO: add cd ..
 	#TODO: updating directory is backwards
 	#TODO:  Make it sot that you can't cd into the directory you are already on.
+	if dir == "" or dir == " ":
+		print("-bash: cd: '%s' : No such file or directory" % dir) 
+		return
+	
 	if dir == "..":
+		if cd == "usr":
+			return
 		spl = cd.split("/")
 		curr = spl[-2]
-		cd = prev
+		last = spl[-1]
+		cd = prev_list[last]
 		return
 	
 	if dir == curr:
@@ -107,7 +119,6 @@ def after_fork():
 
 #				if (s != "command not found"):
 #					break  #break out of loop without exit
-				
 				
 				
 		os.close(1)

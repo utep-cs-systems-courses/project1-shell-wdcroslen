@@ -4,12 +4,19 @@ pid = os.getpid()
 
 pr,pw = os.pipe()
 
-cd = "$ "
+cd = "usr"
 curr = cd
 prev = None
-directory_list = {"$ ":["Desktop","Downloads","temp"] , "Desktop":"", "Downloads":"oof" ,"temp":"none"} #make a dir list for each dir
+prevDir = None
+directory_list = {"usr":["Desktop","Downloads","temp"] , "Desktop":"", "Downloads":"oof" ,"temp":"none","none":"","oof":""} #make a dir list for each dir
 
-#maybe use dict
+#TODO: Do I need a files list separately so you can ls them but not cd?
+
+
+#maybe need to read and write this info to a file for if I create a dir or a file
+#Actually no I just need to update the list.
+
+
 
 #directory_list[Desktop] gives the list of the directories in desktop
 
@@ -22,7 +29,7 @@ import fileinput
 
 
 
-def switch_commands(argument): 
+def switch_commands(argument): #TODO FIXME? : regardless I might not need this method
 	
     switcher = { 
         "cd": "Change Directory", 
@@ -42,9 +49,10 @@ def update_curr_dir(dir):
 	#TODO: updating directory is backwards
 	#TODO:  Make it sot that you can't cd into the directory you are already on.
 	if dir == "..":
+		spl = cd.split("/")
+		curr = spl[-2]
 		cd = prev
 		return
-	
 	
 	if dir == curr:
 		print("-bash: cd: '%s' : No such file or directory" % dir) 
@@ -52,7 +60,8 @@ def update_curr_dir(dir):
 		#might not need this 'if' or 'curr' when I use a dict
 		
 	if dir in directory_list[curr]:  #FIXME: can cd '' in desktop
-		cd = dir + " " + cd
+		prev = cd
+		cd = cd + "/" + dir
 		curr = dir
 		
 	else: 
@@ -81,7 +90,7 @@ def after_fork():
 			if a == "Exit":
 				break
 			time.sleep(.5)
-			a = input(cd)
+			a = input(cd + "$ ")
 			s = switch_commands(a)
 			
 			if (a[:2] == "cd"):   #for some reason I am not getting out of bounds with "cd"

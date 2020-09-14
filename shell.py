@@ -1,5 +1,9 @@
 
 #TODO: I need to work on the redirect
+#TODO: After looking at someone elses I need to remove my lists for cd and use my actual system
+	#I can do this by using direct = os.listdir(os.getcwd())
+	#path = "/var/www/html/"
+  	#dirs = os.listdir( path )
 
 import os, sys, time, re
 
@@ -20,8 +24,6 @@ prev_list = {"Desktop":"usr", "Downloads":"usr" ,"temp":"usr","none":"usr/temp",
 
 #maybe need to read and write this info to a file for if I create a dir or a file
 #Actually no I just need to update the list.
-
-
 
 #directory_list[Desktop] gives the list of the directories in desktop
 
@@ -110,16 +112,10 @@ def after_fork():
 				
 			elif (a == "ls"):
 				list_directories()
-#				for i in directory_list:
-#					print(i, end ="   ")
-#				print("")
 				
 			else:
 				print(s + "\n")
 
-#				if (s != "command not found"):
-#					break  #break out of loop without exit
-				
 				
 		os.close(1)
 		os.dup(pw)

@@ -16,21 +16,49 @@ def ls():
 	return
 
 def lsdir(directory):
-	fdOut = os.open(directory + ".txt", os.O_CREAT | os.O_WRONLY)
-#	dirs = os.listdir(directory)
+	change = False
+	original = curr
 	directory_list = os.listdir(curr)
-	print(directory_list)
+	if directory.startswith("/"):
+		change = True
+		split = directory.split("/")
+		directory = split[-1]
+		index = 0
+		while(index != len(split)-1):
+			if split[index] == '':
+				index +=1
+			os.chdir(split[index])
+			#back two times
+			index = index + 1
+	# itf it starts with / then check if first word in lisdir 
+	
+	#temp original dir
+	#if yes then change current directory 
+	
+	#else create file in current directory
+	
+	if directory.endswith(".txt"):
+		fdOut = os.open(directory + ".txt", os.O_CREAT | os.O_WRONLY)
+		
+	else:
+		fdOut = os.open(directory + ".txt", os.O_CREAT | os.O_WRONLY)
+						
+	
 	for a in directory_list:
 		a = a + "\n"
 		os.write(fdOut, a.encode()) # write to output file
+	i = 0
+	if (change):
+		while(i < len(split)-1):
+			os.chdir("..")
 		
 	return
+
 
 def update_curr_dir(): 
 	curr = os.getcwd()
 	spl = curr.split("/")
 	short = spl[-1]
-
 
 def get_current():
 	global curr
@@ -41,9 +69,6 @@ def get_current():
 def get_short():
 	global curr
 	global short
-	
-#	prompt = "\033[1;36;40m %s\x1b[0m$" % os.getcwd()
-#	print(prompt)
 	curr = os.getcwd()
 	spl = curr.split("/")
 	short = "\033[1;35;40m %s\x1b[0m" % spl[-1]
@@ -81,8 +106,8 @@ def loop_shell():
 			get_current()
 			continue
 			
-		if ">" in user_input:
-			redirect = user_input.split(">")[1].strip()
+		if user_input.startswith("ls >"):
+			redirect = user_input.split("ls >")[1].strip()
 			lsdir(redirect)
 			if redirect in dir_list:
 				print("nice")
@@ -119,7 +144,7 @@ def loop_shell():
 
 		os.write(1, ("-bash: %s: command not found\n" % user_input).encode())
 
-		#TODO add redirect and execute
+		#TODO add redirect
 		
 		"""
 		fdOut = os.open("p0-output.txt", os.O_CREAT | os.O_WRONLY)

@@ -24,18 +24,11 @@ def lsdir(directory):
 		split = directory.split("/")
 		directory = split[-1]
 		index = 0
-		while(index != len(split)-1):
+		while(index != len(split)-1): #change directory based on usr input
 			if split[index] == '':
 				index +=1
-			os.chdir(split[index])
-			#back two times
+			os.chdir(split[index]) 
 			index = index + 1
-	# itf it starts with / then check if first word in lisdir 
-	
-	#temp original dir
-	#if yes then change current directory 
-	
-	#else create file in current directory
 	
 	if directory.endswith(".txt"):
 		fdOut = os.open(directory + ".txt", os.O_CREAT | os.O_WRONLY)
@@ -48,10 +41,10 @@ def lsdir(directory):
 		a = a + "\n"
 		os.write(fdOut, a.encode()) # write to output file
 	i = 0
-	if (change):
-		while(i < len(split)-1):
+	if (change): 
+		while(i < len(split)-1): #return to current dir
 			os.chdir("..")
-		
+			i = i +1
 	return
 
 
@@ -86,8 +79,13 @@ def loop_shell():
 			get_short()
 		user_input = ""
 		user_input = input()
-
-		if "cd" in user_input:
+		
+		background = False  #if & in user_input don't wait
+		if "&" in user_input:
+			background = True
+#			user_input.remove("&")
+			
+		if "cd" in user_input and background:
 			directory = user_input.split("cd")[1].strip()
 			try:
 				os.chdir(directory)
@@ -106,14 +104,12 @@ def loop_shell():
 			get_current()
 			continue
 			
-		if user_input.startswith("ls >"):
+		if user_input.startswith("ls >") and background:
 			redirect = user_input.split("ls >")[1].strip()
 			lsdir(redirect)
-			if redirect in dir_list:
-				print("nice")
 			continue
 		
-		elif "wc" in user_input or "python" in user_input:
+		else:
 			rc = os.fork()
 
 			if rc < 0:
@@ -121,35 +117,53 @@ def loop_shell():
 				sys.exit(1)
 
 			elif rc == 0:
-				if "python" in user_input:
-					file = user_input.split("python")[1].strip()
-					args = ["python",file]
-				else:
-					file = user_input.split("wc")[1].strip()
-					args = ["wc", file]
-				for dir in re.split(":", os.environ['PATH']): # try each directory in the path
-					program = "%s/%s" % (dir, args[0])
-					try:
-						os.execve(program, args, os.environ) # try to exec program
-						continue
-					except FileNotFoundError:
-						pass 
-
-				os.write(2, ("Child:    Could not exec %s\n" % args[0]).encode())
+#				if '&' in user_input:
+#					user_input.replace("&",'')
+					
+				if "python" in user_input or "wc" in user_input:
+					if "python" in user_input:
+						file = user_input.split("python")[1].strip()
+						args = ["python",file]
+					elif "wc" in user_input:
+						file = user_input.split("wc")[1].strip()
+						args = ["wc", file]
+					for dir in re.split(":", os.environ['PATH']): # try each directory in the path
+						program = "%s/%s" % (dir, args[0])
+						try:
+							os.execve(program, args, os.environ) # try to exec program
+							continue
+						except FileNotFoundError:
+							pass 
+				time.sleep(2)   
+				os.write(2, ("\nChild: Could not execute\n").encode())
 				quit(1)
 
 			else:
-				os.wait()
-			continue
+				if not background: #background tasks
+					os.wait()
+				else:
+					user_input.replace("&",'')
+					
+				if user_input == 'ls':
+					ls()
+					continue
+					
+				elif "cd" in user_input:
+					directory = user_input.split("cd")[1].strip()
+					try:
+						os.chdir(directory)
+					except FileNotFoundError:
+						os.write(1, ("-bash: cd: %s: No such file or directory\n" % directory).encode())
+					continue	
+				
+				elif user_input.startswith("ls >"):
+					redirect = user_input.split("ls >")[1].strip()
+					lsdir(redirect)
+					continue
+		if not background:
+			os.write(1, ("-bash: %s: command not found\n" % user_input).encode())
 
-		os.write(1, ("-bash: %s: command not found\n" % user_input).encode())
-
-		#TODO add redirect
 		
-		"""
-		fdOut = os.open("p0-output.txt", os.O_CREAT | os.O_WRONLY)
-		fdIn = os.open("p0-io.py", os.O_RDONLY)
-		"""
 
 if __name__ == "__main__":
 	loop_shell()

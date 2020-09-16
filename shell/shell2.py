@@ -1,8 +1,11 @@
+#! /usr/bin/env python
+
 import os, sys, time, re
 
 curr = os.getcwd()
 spl = curr.split("/")
 short = spl[-1]
+#execute = ["wc", "shell2.py"] #default args for using execve()
 
 dir_list = spl #probably don't need this
 
@@ -65,6 +68,10 @@ def get_short():
 	curr = os.getcwd()
 	spl = curr.split("/")
 	short = "\033[1;35;40m %s\x1b[0m" % spl[-1]
+#	try:
+#		short = [str(n) for n in input(short).split()]
+#	except EOFError:
+#		sys.exit(1)
 	os.write(1, (short + "$ ").encode())
 	return
 
@@ -75,99 +82,108 @@ def loop_shell():
 	while True:
 		if 'PS1' in os.environ:
 			os.write(1,(os.environ['PS1']).encode())
+			try:
+				user_input = [str(n) for n in input().split()]
+			except EOFError: 
+				sys.exit(1)
 		else:
 			get_short()
-		user_input = ""
-		user_input = input()
-		
-		background = False  #if & in user_input don't wait
-		if "&" in user_input:
-			background = True
-#			user_input.remove("&")
-			
-		elif "cd" in user_input and not background:
-			directory = user_input.split("cd")[1].strip()
 			try:
-				os.chdir(directory)
+				user_input = [str(n) for n in input().split()]
+			except EOFError: 
+				sys.exit(1)
+			
+#		user_input = ""
+#		user_input = input()
+		if user_input[0] == 'exit':
+			sys.exit(1)
+			
+		if "cd" in user_input:
+			try:
+				os.chdir(user_input[1])
 			except FileNotFoundError:
 				os.write(1, ("-bash: cd: %s: No such file or directory\n" % directory).encode())
 			
 			continue
-
-		elif user_input == 'ls':
-			ls()
-			continue
-
-		elif user_input == 'exit':
-			quit(1)
-
-		elif "pwd" in user_input:
-			get_current()
-			continue
 			
-		elif user_input.startswith("ls >") and background:
-			redirect = user_input.split("ls >")[1].strip()
-			lsdir(redirect)
-			continue
-		
 		else:
-			rc = os.fork()
-
+			rc = os.fork()  
+		
+			if '&' in user_input:
+				user_input.replace("&",'')
+				
+			if user_input[0] == 'exit':
+				quit(1)
+				
 			if rc < 0:
 				os.write(2, ("fork failed, returning %d\n" % rc).encode())
 				sys.exit(1)
 
 			elif rc == 0:
-#				if '&' in user_input:
-#					user_input.replace("&",'')
-					
-				if "python" in user_input or "wc" in user_input:
-					if "python" in user_input:
-						file = user_input.split("python")[1].strip()
-						args = ["python",file]
-					elif "wc" in user_input:
-						file = user_input.split("wc")[1].strip()
-						args = ["wc", file]
-					for dir in re.split(":", os.environ['PATH']): # try each directory in the path
-						program = "%s/%s" % (dir, args[0])
-						try:
-							os.execve(program, args, os.environ) # try to exec program
-							continue
-						except FileNotFoundError:
-							pass 
+				redirect(user_input)
+				execChild(user_input)
 				
-				time.sleep(2)   
-				os.write(2, ("\nChild: Could not execute\n").encode())
-				quit(1)
-
-			else:
-				if not background: #background tasks
-					os.wait()
-					continue
-				else:
-					user_input.replace("&",'')
+			else:                           # parent (forked ok)
+				if not '&' in user_input:
+					childPidCode = os.wait() 
 					
-				if user_input == 'ls':
-					ls()
-					continue
-					
-				elif "cd" in user_input:
-					directory = user_input.split("cd")[1].strip()
-					try:
-						os.chdir(directory)
-					except FileNotFoundError:
-						os.write(1, ("-bash: cd: %s: No such file or directory\n" % directory).encode())
-					continue	
-				
-				elif user_input.startswith("ls >"):
-					redirect = user_input.split("ls >")[1].strip()
-					lsdir(redirect)
-					continue
-		if not background:
-			os.write(1, ("-bash: %s: command not found\n" % user_input).encode())
 
+def parse2(cmdString):
+	outFile = None
+	inFile = None
+	cmd = ''
+	cmdString = re.sub(' +', ' ', cmdString)
+	
+	if '>' in cmdString:
+		[cmd, outFile] = cmdString.split('>',1)
+		outFile = outFile.strip()
 		
+	if '<' in cmd:
+		[cmd, inFile] = cmd.split('<', 1)
+		inFile = inFile.strip()
+    
+	elif outFile != None and '<' in outFile:
+		[outFile, inFile] = outFile.split('<', 1)
+		
+		outFile = outFile.strip()
+		inFile = inFile.strip()
+	return cmd.split(), outFile, inFile
 
+
+def redirect(args):
+	if '>' in args or '<' in args:
+		cmd,outFile,inFile = parse2(args)
+		
+	if '>' in args:
+		os.close(1)
+		os.open(outFile, os.O_CREAT | os.O_WRONLY)
+		os.set_inheritable(1,True)
+		
+		execute = [cmd,outFile]
+		execChild(execute)
+		
+	if '<' in args:
+		os.close(0) 
+		os.open(outFile, os.O_RDONLY)
+		os.set_inheritable(1,True)
+		
+		execute = [cmd,outFile]
+		execChild(execute)
+	
+	
+def execChild(execute):
+	for dir in re.split(":", os.environ['PATH']): # try each directory in the path
+		program = "%s/%s" % (dir, execute[0])
+		try:
+			os.execve(program, execute, os.environ) # try to exec program
+		except FileNotFoundError:
+			pass 
+#	return
+#		time.sleep(2) 
+	os.write(2, ("-bash: %s: command not found\n" % execute[0]).encode())
+	quit(1)
+	
+	
 if __name__ == "__main__":
 	loop_shell()
 	

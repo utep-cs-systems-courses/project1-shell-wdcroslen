@@ -189,8 +189,7 @@ def simple_pipe(args): #args is a list so I can't split
 			execChild(read)
 			if "|" in read:
 				pipe(read)
-			execChild(read)  # Run the process as normal
-#        	os.write(2, ("Could not exec %s\n" % writeCommands[0]).encode())
+			execChild(read)
 			
 def redirect(args):
 	if '>' in args or '<' in args:

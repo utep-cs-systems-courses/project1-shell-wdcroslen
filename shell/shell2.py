@@ -86,7 +86,7 @@ def loop_shell():
 				user_input = [str(n) for n in input().split()]
 			except EOFError: 
 				sys.exit(1)
-			
+		w = True
 #		user_input = ""
 #		user_input = input()
 		if not user_input:
@@ -109,6 +109,7 @@ def loop_shell():
 		
 			if '&' in user_input:
 				user_input.remove("&")
+				w = False
 				
 			if user_input[0] == 'exit':
 				quit(1)
@@ -128,8 +129,10 @@ def loop_shell():
 				execChild(user_input)
 				
 			else:                           # parent (forked ok)
-				if not '&' in user_input:
-					childPidCode = os.wait() 
+				if w:
+					code = os.wait() 
+					if code[1] != 0 and code[1] != 256:
+						os.write(2, ("Program terminated with exit code: %d\n" % code[1]).encode())
 					
 
 def parse2(cmdString):

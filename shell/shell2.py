@@ -203,7 +203,7 @@ def redirect(args):
 		os.set_inheritable(1,True)
 		
 		execute = [cmd,outFile]
-#		print(execute) ## still failing background, input and pipe
+
 		execChild(execute) #FIXME: output file only one line  #maybe I should just call lsdir
 		
 	if '<' in args:
@@ -212,8 +212,6 @@ def redirect(args):
 		os.set_inheritable(0,True)
 		
 		execute = args[0:args.index("<")]
-#		print(execute)
-#		execute = [cmd,outFile]
 		execChild(execute)
 	
 

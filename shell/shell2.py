@@ -68,13 +68,8 @@ def get_short():
 	curr = os.getcwd()
 	spl = curr.split("/")
 	short = "\033[1;35;40m %s\x1b[0m" % spl[-1]
-#	try:
-#		short = [str(n) for n in input(short).split()]
-#	except EOFError:
-#		sys.exit(1)
 	os.write(1, (short + "$ ").encode())
 	return
-
 
 def loop_shell():
 	global short
@@ -95,6 +90,10 @@ def loop_shell():
 			
 #		user_input = ""
 #		user_input = input()
+		if not user_input:
+			loop_shell()
+			return
+		
 		if user_input[0] == 'exit':
 			sys.exit(1)
 			
@@ -110,7 +109,7 @@ def loop_shell():
 			rc = os.fork()  
 		
 			if '&' in user_input:
-				user_input.replace("&",'')
+				user_input.remove("&")
 				
 			if user_input[0] == 'exit':
 				quit(1)
@@ -119,8 +118,9 @@ def loop_shell():
 				os.write(2, ("fork failed, returning %d\n" % rc).encode())
 				sys.exit(1)
 
-			elif rc == 0:
+			elif rc == 0:              #son or daughter (#not assuming)
 				redirect(user_input)
+				simple_pipe(user_input)
 				execChild(user_input)
 				
 			else:                           # parent (forked ok)
@@ -130,7 +130,8 @@ def loop_shell():
 
 def parse2(cmdString):
 	outFile = None
-	inFile = None
+	inFile = Nonefin
+	cmdString = ' '.join([str(elem) for elem in cmdString])
 	cmd = ''
 	cmdString = re.sub(' +', ' ', cmdString)
 	
@@ -150,9 +151,43 @@ def parse2(cmdString):
 	return cmd.split(), outFile, inFile
 
 
+def simple_pipe(args): #args is a list so I can't split
+	
+	if '|' in args:
+		args = ' '.join([str(elem) for elem in args])
+		new_args = args.split("|")
+		print(new_args[0])
+		print(new_args[1])
+		one = new_args[0].split()
+		two = new_args[1].split()
+		
+		pr,pw = os.pipe()
+
+		for f in (pr, pw):
+			os.set_inheritable(f, True)
+
+		fork = os.fork()
+		if fork < 0:
+				os.write(2, ("fork failed, returning %d\n" % rc).encode())
+				sys.exit(1)
+
+		elif fork == 0: #son or daughter (#not assuming)
+			os.close(1)
+			os.dup(pw) #redirect inp to child
+			for fd in (pr, pw):
+				os.close(fd)
+			execChild(one)
+		else:  #parent
+			os.close(0)
+			os.dup(pr) #redirect outp to parent
+			for fd in (pr, pw):
+				os.close(fd)
+			execChild(two)
+			
 def redirect(args):
 	if '>' in args or '<' in args:
 		cmd,outFile,inFile = parse2(args)
+		cmd = cmd[0]
 		
 	if '>' in args:
 		os.close(1)
@@ -160,7 +195,7 @@ def redirect(args):
 		os.set_inheritable(1,True)
 		
 		execute = [cmd,outFile]
-		execChild(execute)
+		execChild(execute) #FIXME: output file only one line  #maybe I should just call lsdir
 		
 	if '<' in args:
 		os.close(0) 
@@ -170,7 +205,7 @@ def redirect(args):
 		execute = [cmd,outFile]
 		execChild(execute)
 	
-	
+
 def execChild(execute):
 	for dir in re.split(":", os.environ['PATH']): # try each directory in the path
 		program = "%s/%s" % (dir, execute[0])
@@ -178,8 +213,7 @@ def execChild(execute):
 			os.execve(program, execute, os.environ) # try to exec program
 		except FileNotFoundError:
 			pass 
-#	return
-#		time.sleep(2) 
+	time.sleep(1) 
 	os.write(2, ("-bash: %s: command not found\n" % execute[0]).encode())
 	quit(1)
 	

@@ -137,7 +137,7 @@ def loop_shell():
 
 def parse2(cmdString):
 	outFile = None
-	inFile = Nonefin
+	inFile = None
 	cmdString = ' '.join([str(elem) for elem in cmdString])
 	cmd = ''
 	cmdString = re.sub(' +', ' ', cmdString)
@@ -200,12 +200,13 @@ def redirect(args):
 		os.set_inheritable(1,True)
 		
 		execute = [cmd,outFile]
+		print(execute)
 		execChild(execute) #FIXME: output file only one line  #maybe I should just call lsdir
 		
 	if '<' in args:
 		os.close(0) 
 		os.open(outFile, os.O_RDONLY)
-		os.set_inheritable(1,True)
+		os.set_inheritable(0,True)
 		
 		execute = [cmd,outFile]
 		execChild(execute)

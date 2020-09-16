@@ -160,8 +160,10 @@ def parse2(cmdString):
 def simple_pipe(args): #args is a list so I can't split
 	
 	if '|' in args:
+		
 		write = args[0:args.index("|")]
 		read = args[args.index("|") + 1:]
+		
 		pr,pw = os.pipe()
 
 		for f in (pr, pw):
@@ -174,16 +176,21 @@ def simple_pipe(args): #args is a list so I can't split
 
 		elif fork == 0: #son or daughter (#not assuming)
 			os.close(1)
-			os.dup(pw) #redirect inp to child
+			os.dup2(pw,1) #redirect inp to child
 			for fd in (pr, pw):
 				os.close(fd)
 			execChild(write)
+			
 		else:  #parent
 			os.close(0)
-			os.dup(pr) #redirect outp to parent
+			os.dup2(pr,0) #redirect outp to parent
 			for fd in (pr, pw):
 				os.close(fd)
 			execChild(read)
+			if "|" in read:
+				pipe(read)
+			execChild(read)  # Run the process as normal
+#        	os.write(2, ("Could not exec %s\n" % writeCommands[0]).encode())
 			
 def redirect(args):
 	if '>' in args or '<' in args:

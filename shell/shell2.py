@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 import os, sys, time, re
 
@@ -15,7 +15,7 @@ def ls():
 	directory_list = os.listdir(curr)
 	for i in directory_list:
 		print(i, end = "   ")
-	print("")
+#	print("")
 	return
 
 def lsdir(directory):
@@ -49,7 +49,6 @@ def lsdir(directory):
 			os.chdir("..")
 			i = i +1
 	return
-
 
 def update_curr_dir(): 
 	curr = os.getcwd()
@@ -119,6 +118,11 @@ def loop_shell():
 				sys.exit(1)
 
 			elif rc == 0:              #son or daughter (#not assuming)
+				if user_input[0].startswith("/"):
+					try:
+						os.execve(user_input[0], user_input, os.environ) # try to exec program
+					except FileNotFoundError:
+						pass 
 				redirect(user_input)
 				simple_pipe(user_input)
 				execChild(user_input)
@@ -156,8 +160,6 @@ def simple_pipe(args): #args is a list so I can't split
 	if '|' in args:
 		args = ' '.join([str(elem) for elem in args])
 		new_args = args.split("|")
-		print(new_args[0])
-		print(new_args[1])
 		one = new_args[0].split()
 		two = new_args[1].split()
 		

@@ -87,8 +87,7 @@ def loop_shell():
 			except EOFError: 
 				sys.exit(1)
 		w = True
-#		user_input = ""
-#		user_input = input()
+		
 		if not user_input:
 			loop_shell()
 			return
@@ -129,7 +128,7 @@ def loop_shell():
 				execChild(user_input)
 				
 			else:                           # parent (forked ok)
-				if w:
+				if w: #wait
 					code = os.wait() 
 					if code[1] != 0 and code[1] != 256:
 						os.write(2, ("Program terminated with exit code: %d\n" % code[1]).encode())
@@ -161,11 +160,8 @@ def parse2(cmdString):
 def simple_pipe(args): #args is a list so I can't split
 	
 	if '|' in args:
-		args = ' '.join([str(elem) for elem in args])
-		new_args = args.split("|")
-		one = new_args[0].split()
-		two = new_args[1].split()
-		
+		write = args[0:args.index("|")]
+		read = args[args.index("|") + 1:]
 		pr,pw = os.pipe()
 
 		for f in (pr, pw):
@@ -181,18 +177,19 @@ def simple_pipe(args): #args is a list so I can't split
 			os.dup(pw) #redirect inp to child
 			for fd in (pr, pw):
 				os.close(fd)
-			execChild(one)
+			execChild(write)
 		else:  #parent
 			os.close(0)
 			os.dup(pr) #redirect outp to parent
 			for fd in (pr, pw):
 				os.close(fd)
-			execChild(two)
+			execChild(read)
 			
 def redirect(args):
 	if '>' in args or '<' in args:
 		cmd,outFile,inFile = parse2(args)
-		cmd = cmd[0]
+		if '>' in args:
+			cmd = cmd[0]
 		
 	if '>' in args:
 		os.close(1)
@@ -200,15 +197,17 @@ def redirect(args):
 		os.set_inheritable(1,True)
 		
 		execute = [cmd,outFile]
-		print(execute)
+#		print(execute) ## still failing background, input and pipe
 		execChild(execute) #FIXME: output file only one line  #maybe I should just call lsdir
 		
 	if '<' in args:
 		os.close(0) 
-		os.open(outFile, os.O_RDONLY)
+		os.open(args[-1], os.O_RDONLY)
 		os.set_inheritable(0,True)
 		
-		execute = [cmd,outFile]
+		execute = args[0:args.index("<")]
+#		print(execute)
+#		execute = [cmd,outFile]
 		execChild(execute)
 	
 

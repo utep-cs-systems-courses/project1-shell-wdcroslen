@@ -77,13 +77,15 @@ def loop_shell():
 		if 'PS1' in os.environ:
 			os.write(1,(os.environ['PS1']).encode())
 			try:
-				user_input = [str(n) for n in input().split()]
+				inp = os.read(0,256)
+				user_input = inp.decode().split()
 			except EOFError: 
 				sys.exit(1)
 		else:
 			get_short()
 			try:
-				user_input = [str(n) for n in input().split()]
+				inp = os.read(0,256)
+				user_input = inp.decode().split()
 			except EOFError: 
 				sys.exit(1)
 		w = True

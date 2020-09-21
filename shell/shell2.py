@@ -78,30 +78,19 @@ def loop_shell():
 			os.write(1,(os.environ['PS1']).encode())
 			try:
 				inp = os.read(0,256)
-				user_input = inp.decode().split("\n")
-				user_input = ' '.join(user_input)
-				user_input = user_input.split()
-				
-				if not user_input:
-					break
-				return
-			
-				
+				user_input = inp.decode().split()
 			except EOFError: 
 				sys.exit(1)
 		else:
 			get_short()
 			try:
 				inp = os.read(0,256)
-				user_input = inp.decode().split("\n")
-				user_input = ' '.join(user_input)
-				user_input = user_input.split()
-				
+				user_input = inp.decode().split()
 			except EOFError: 
 				sys.exit(1)
 		w = True
 		
-		if user_input is '\n':
+		if user_input == '\n':
 			loop_shell()
 			return
 		
